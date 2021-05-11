@@ -1,17 +1,22 @@
 import ko from 'knockout';
 import _ from 'underscore';
-const head = require('headjs');
+import head from 'headjs';
 import { FreeboardModel } from './FreeboardModel';
-import { FreeboardPlugin, FreeboardPluginDefinition, Settings } from './Plugin';
+import {
+  FreeboardPlugin,
+  FreeboardPluginDefinition,
+  Settings,
+  SettingsType,
+} from './Plugin';
 
 export class WidgetModel {
-  public datasourceRefreshNotifications = {};
-  public calculatedSettingScripts = {};
+  public datasourceRefreshNotifications: { [key: string]: string[] } = {};
+  public calculatedSettingScripts: { [key: string]: Function } = {};
 
-  public title = ko.observable();
+  public title = ko.observable<string>();
   public fillSize = ko.observable(false);
 
-  public type = ko.observable();
+  public type = ko.observable<SettingsType>();
 
   public settings = ko.observable<Settings>();
   public height = ko.computed({
@@ -36,7 +41,7 @@ export class WidgetModel {
 
   constructor(
     private theFreeboardModel: FreeboardModel,
-    private widgetPlugins: { [key: string]: FreeboardPluginDefinition }
+    private widgetPlugins: { [key in SettingsType]: FreeboardPluginDefinition }
   ) {
     const disposeWidgetInstance = () => {
       if (!_.isUndefined(this.widgetInstance)) {
@@ -87,19 +92,19 @@ export class WidgetModel {
     });
   }
 
-  public processDatasourceUpdate(datasourceName) {
+  public processDatasourceUpdate(datasourceName: string) {
     var refreshSettingNames = this.datasourceRefreshNotifications[
       datasourceName
     ];
 
     if (_.isArray(refreshSettingNames)) {
-      _.each(refreshSettingNames, function (settingName) {
+      _.each(refreshSettingNames, (settingName) => {
         this.processCalculatedSetting(settingName);
       });
     }
   }
 
-  public callValueFunction(theFunction) {
+  public callValueFunction(theFunction: Function) {
     return theFunction.call(undefined, this.theFreeboardModel.datasourceData);
   }
 
@@ -112,7 +117,7 @@ export class WidgetModel {
     }
   }
 
-  public processCalculatedSetting(settingName) {
+  public processCalculatedSetting(settingName: string) {
     if (_.isFunction(this.calculatedSettingScripts[settingName])) {
       var returnValue = undefined;
 
@@ -154,14 +159,14 @@ export class WidgetModel {
     }
 
     // Check for any calculated settings
-    var settingsDefs = widgetPlugins[this.type()].settings;
+    var settingsDefs = this.widgetPlugins[this.type()].settings;
     var datasourceRegex = new RegExp(
       'datasources.([\\w_-]+)|datasources\\[[\'"]([^\'"]+)',
       'g'
     );
     var currentSettings = this.settings();
 
-    _.each(settingsDefs, function (settingDef) {
+    _.each(settingsDefs, (settingDef) => {
       if (settingDef.type == 'calculated') {
         var script = currentSettings[settingDef.name];
 
@@ -221,7 +226,7 @@ export class WidgetModel {
     });
   }
 
-  public render(element) {
+  public render(element: HTMLDivElement) {
     this.shouldRender(false);
     if (
       !_.isUndefined(this.widgetInstance) &&
@@ -242,7 +247,11 @@ export class WidgetModel {
     };
   }
 
-  public deserialize(object) {
+  public deserialize(object: {
+    type: SettingsType;
+    title: string;
+    settings: Settings;
+  }) {
     this.title(object.title);
     this.settings(object.settings);
     this.type(object.type);

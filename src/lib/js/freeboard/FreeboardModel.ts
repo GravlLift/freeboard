@@ -13,6 +13,7 @@ export class FreeboardModel {
   public plugins = ko.observableArray();
   public panes = ko.observableArray();
   public datasourceData = {};
+
   constructor(
     datasourcePlugins,
     widgetPlugins,
@@ -77,91 +78,91 @@ export class FreeboardModel {
         return returnTypes;
       },
     });
+  }
 
-    function addPluginSource(pluginSource) {
-      if (pluginSource && this.plugins.indexOf(pluginSource) == -1) {
-        this.plugins.push(pluginSource);
-      }
+  public addPluginSource(pluginSource) {
+    if (pluginSource && this.plugins.indexOf(pluginSource) == -1) {
+      this.plugins.push(pluginSource);
     }
+  }
 
-    function serialize() {
-      var panes = [];
+  public serialize() {
+    var panes = [];
 
-      _.each(this.panes(), function (pane) {
-        panes.push(pane.serialize());
-      });
+    _.each(this.panes(), function (pane) {
+      panes.push(pane.serialize());
+    });
 
-      var datasources = [];
+    var datasources = [];
 
-      _.each(this.datasources(), function (datasource) {
-        datasources.push(datasource.serialize());
-      });
+    _.each(this.datasources(), function (datasource) {
+      datasources.push(datasource.serialize());
+    });
 
-      return {
-        version: SERIALIZATION_VERSION,
-        header_image: this.header_image(),
-        allow_edit: this.allow_edit(),
-        plugins: this.plugins(),
-        panes: panes,
-        datasources: datasources,
-        columns: freeboardUI.getUserColumns(),
-      };
-    }
+    return {
+      version: SERIALIZATION_VERSION,
+      header_image: this.header_image(),
+      allow_edit: this.allow_edit(),
+      plugins: this.plugins(),
+      panes: panes,
+      datasources: datasources,
+      columns: freeboardUI.getUserColumns(),
+    };
+  }
 
-    function deserialize(object, finishedCallback) {
-      this.clearDashboard();
+  public deserialize(object, finishedCallback) {
+    this.clearDashboard();
 
-      function finishLoad() {
-        freeboardUI.setUserColumns(object.columns);
+    function finishLoad() {
+      freeboardUI.setUserColumns(object.columns);
 
-        if (!_.isUndefined(object.allow_edit)) {
-          this.allow_edit(object.allow_edit);
-        } else {
-          this.allow_edit(true);
-        }
-        this.version = object.version || 0;
-        this.header_image(object.header_image);
-
-        _.each(object.datasources, function (datasourceConfig) {
-          var datasource = new DatasourceModel(this, datasourcePlugins);
-          datasource.deserialize(datasourceConfig);
-          this.addDatasource(datasource);
-        });
-
-        var sortedPanes = _.sortBy(object.panes, function (pane) {
-          return freeboardUI.getPositionForScreenSize(pane).row;
-        });
-
-        _.each(sortedPanes, function (paneConfig) {
-          var pane = new PaneModel(this, widgetPlugins);
-          pane.deserialize(paneConfig);
-          this.panes.push(pane);
-        });
-
-        if (this.allow_edit() && this.panes().length == 0) {
-          this.setEditing(true);
-        }
-
-        if (_.isFunction(finishedCallback)) {
-          finishedCallback();
-        }
-
-        freeboardUI.processResize(true);
-      }
-
-      // This could have been this.plugins(object.plugins), but for some weird reason head.js was causing a function to be added to the list of plugins.
-      _.each(object.plugins, function (plugin) {
-        this.addPluginSource(plugin);
-      });
-
-      // Load any plugins referenced in this definition
-      if (_.isArray(object.plugins) && object.plugins.length > 0) {
-        head.js(object.plugins, function () {
-          finishLoad();
-        });
+      if (!_.isUndefined(object.allow_edit)) {
+        this.allow_edit(object.allow_edit);
       } else {
-        finishLoad();
+        this.allow_edit(true);
       }
+      this.version = object.version || 0;
+      this.header_image(object.header_image);
+
+      _.each(object.datasources, function (datasourceConfig) {
+        var datasource = new DatasourceModel(this, datasourcePlugins);
+        datasource.deserialize(datasourceConfig);
+        this.addDatasource(datasource);
+      });
+
+      var sortedPanes = _.sortBy(object.panes, function (pane) {
+        return freeboardUI.getPositionForScreenSize(pane).row;
+      });
+
+      _.each(sortedPanes, function (paneConfig) {
+        var pane = new PaneModel(this, widgetPlugins);
+        pane.deserialize(paneConfig);
+        this.panes.push(pane);
+      });
+
+      if (this.allow_edit() && this.panes().length == 0) {
+        this.setEditing(true);
+      }
+
+      if (_.isFunction(finishedCallback)) {
+        finishedCallback();
+      }
+
+      freeboardUI.processResize(true);
+    }
+
+    // This could have been this.plugins(object.plugins), but for some weird reason head.js was causing a function to be added to the list of plugins.
+    _.each(object.plugins, function (plugin) {
+      this.addPluginSource(plugin);
+    });
+
+    // Load any plugins referenced in this definition
+    if (_.isArray(object.plugins) && object.plugins.length > 0) {
+      head.js(object.plugins, function () {
+        finishLoad();
+      });
+    } else {
+      finishLoad();
     }
   }
 

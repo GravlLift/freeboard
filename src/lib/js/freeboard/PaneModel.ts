@@ -1,18 +1,22 @@
 import ko from 'knockout';
 import _ from 'underscore';
 import { FreeboardModel } from './FreeboardModel';
+import { FreeboardPluginDefinition, Settings, SettingsType } from './Plugin';
 import { WidgetModel } from './WidgetModel';
 
 export class PaneModel {
   private widgets = ko.observableArray<WidgetModel>();
 
-  private title = ko.observable();
+  private title = ko.observable<string>();
   private width = ko.observable(1);
   private row = {};
   private col = {};
 
   private col_width = ko.observable(1);
-  constructor(theFreeboardModel: FreeboardModel, widgetPlugins) {
+  constructor(
+    private theFreeboardModel: FreeboardModel,
+    private widgetPlugins: { [key in SettingsType]: FreeboardPluginDefinition }
+  ) {
     this.col_width.subscribe((newValue) => {
       this.processSizeChange();
     });
@@ -78,9 +82,9 @@ export class PaneModel {
   }
 
   public serialize() {
-    var widgets = [];
+    var widgets: { type: string; title: string; settings: Settings }[] = [];
 
-    _.each(this.widgets(), function (widget) {
+    _.each(this.widgets(), (widget) => {
       widgets.push(widget.serialize());
     });
 
@@ -94,7 +98,14 @@ export class PaneModel {
     };
   }
 
-  public deserialize(object) {
+  public deserialize(object: {
+    title: string;
+    row: {};
+    col: {};
+    col_width: number;
+    widgets: { type: SettingsType; title: string; settings: Settings }[];
+    width: number;
+  }) {
     this.title(object.title);
     this.width(object.width);
 
@@ -102,8 +113,8 @@ export class PaneModel {
     this.col = object.col;
     this.col_width(object.col_width || 1);
 
-    _.each(object.widgets, function (widgetConfig) {
-      var widget = new WidgetModel(theFreeboardModel, widgetPlugins);
+    _.each(object.widgets, (widgetConfig) => {
+      var widget = new WidgetModel(this.theFreeboardModel, this.widgetPlugins);
       widget.deserialize(widgetConfig);
       this.widgets.push(widget);
     });

@@ -1,22 +1,30 @@
 import ko from 'knockout';
 import _ from 'underscore';
+import head from 'headjs';
 import { FreeboardModel } from './FreeboardModel';
-import { FreeboardPlugin } from './Plugin';
+import {
+  FreeboardPlugin,
+  FreeboardPluginDefinition,
+  Settings,
+  SettingsType,
+} from './Plugin';
 
 export class DatasourceModel {
   name: ko.Observable<any> = ko.observable();
   latestData: ko.Observable<any> = ko.observable();
-  settings: ko.Observable<{}> = ko.observable({});
-  type = ko.observable();
-  datasourceInstance: FreeboardPlugin | undefined;
+  settings: ko.Observable<Settings> = ko.observable();
+  type = ko.observable<SettingsType>();
+  datasourceInstance: FreeboardPlugin;
   last_updated = ko.observable('never');
   last_error = ko.observable();
+
   constructor(
-    theFreeboardModel: FreeboardModel,
-    datasourcePlugins: FreeboardPlugin[]
+    private theFreeboardModel: FreeboardModel,
+    datasourcePlugins: { [key in SettingsType]: FreeboardPluginDefinition }
   ) {
     this.settings.subscribe((newValue) => {
       if (
+        newValue &&
         !_.isUndefined(this.datasourceInstance) &&
         _.isFunction(this.datasourceInstance.onSettingsChanged)
       ) {
@@ -24,17 +32,8 @@ export class DatasourceModel {
       }
     });
 
-    this.updateCallback = (newData) => {
-      theFreeboardModel.processDatasourceUpdate(this, newData);
-
-      this.latestData(newData);
-
-      var now = new Date();
-      this.last_updated(now.toLocaleTimeString());
-    };
-
     this.type.subscribe((newValue) => {
-      disposeDatasourceInstance();
+      this.disposeDatasourceInstance();
 
       if (
         newValue in datasourcePlugins &&
@@ -81,7 +80,7 @@ export class DatasourceModel {
     };
   }
 
-  deserialize(object) {
+  deserialize(object: { settings: Settings; name: any; type: SettingsType }) {
     this.settings(object.settings);
     this.name(object.name);
     this.type(object.type);
@@ -99,6 +98,15 @@ export class DatasourceModel {
     ) {
       this.datasourceInstance.updateNow();
     }
+  }
+
+  updateCallback(newData: any) {
+    this.theFreeboardModel.processDatasourceUpdate(this, newData);
+
+    this.latestData(newData);
+
+    var now = new Date();
+    this.last_updated(now.toLocaleTimeString());
   }
 
   dispose() {

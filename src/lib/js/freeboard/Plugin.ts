@@ -1,26 +1,35 @@
 export interface FreeboardPluginDefinition {
   type_name: string;
-  display_name: string;
-  description: string;
-  external_scripts: string[];
+  display_name?: string;
+  description?: string;
+  external_scripts?: string[];
   settings: Settings[];
-  fill_size: boolean;
+  fill_size?: boolean;
   newInstance: (
-    settings: Settings[],
+    settings: Settings,
     newInstanceCallback: (newInstance: FreeboardPlugin) => void,
-    updateCallback?: () => void
+    updateCallback?: (data: any) => void
   ) => void;
 }
 
+export type SettingsType =
+  | 'text'
+  | 'number'
+  | 'calculated'
+  | 'boolean'
+  | 'option'
+  | 'array';
+
 export interface Settings {
   name: string;
-  display_name: string;
-  type: 'text' | 'number' | 'calculated' | 'boolean' | 'option' | 'array';
+  display_name?: string;
+  type: SettingsType;
   default_value?: string;
   description?: string;
   required?: boolean;
   options?: { name: string; value: string }[];
   settings?: Settings[];
+  [key: string]: any;
 }
 
 export abstract class FreeboardPlugin {
@@ -28,7 +37,14 @@ export abstract class FreeboardPlugin {
     public settings: Settings[],
     public updateCallback?: () => void
   ) {}
-  abstract onSettingsChanged(newSettings: Settings[]): void;
+  abstract render(containerElement: HTMLDivElement): void;
+  abstract onSettingsChanged(newSettings: Settings): void;
   abstract updateNow(): void;
   abstract onDispose(): void;
+  abstract getHeight: () => number;
+  abstract onCalculatedValueChanged?: (
+    settingName: string,
+    newValue: any
+  ) => void;
+  onSizeChanged?: () => void;
 }

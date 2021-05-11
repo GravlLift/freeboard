@@ -32,10 +32,6 @@ import { FreeboardUI } from './FreeboardUI';
         },
         false
       );
-    } else if (p.attachEvent) {
-      p.attachEvent('onDOMAttrModified', function () {
-        flag = true;
-      });
     } else {
       return false;
     }
@@ -45,7 +41,11 @@ import { FreeboardUI } from './FreeboardUI';
     return flag;
   }
 
-  function checkAttributes(chkAttr, e) {
+  function checkAttributes(
+    this: JQuery,
+    chkAttr: boolean,
+    e: JQuery.TriggeredEvent<HTMLElement, undefined, HTMLElement, HTMLElement>
+  ) {
     if (chkAttr) {
       var attributes = this.data('attr-old-value');
 

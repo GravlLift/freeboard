@@ -8,7 +8,7 @@ export class DialogBox {
     title: string | null,
     okTitle: string | null,
     cancelTitle: string | null,
-    okCallback: () => boolean
+    okCallback: () => boolean | void
   ) {
     var modal_width = 900;
 
@@ -38,7 +38,7 @@ export class DialogBox {
           var hold = false;
 
           if (_.isFunction(okCallback)) {
-            hold = okCallback();
+            hold = !!okCallback();
           }
 
           if (!hold) {

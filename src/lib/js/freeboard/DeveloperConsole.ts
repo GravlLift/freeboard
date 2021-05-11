@@ -1,4 +1,5 @@
 import _ from 'underscore';
+import head from 'headjs';
 import { DialogBox } from './DialogBox';
 import { FreeboardModel } from './FreeboardModel';
 
@@ -6,7 +7,7 @@ export class DeveloperConsole {
   constructor(private theFreeboardModel: FreeboardModel) {}
 
   public showDeveloperConsole() {
-    var pluginScriptsInputs = [];
+    var pluginScriptsInputs: JQuery<HTMLInputElement>[] = [];
     var container = $('<div></div>');
     var addScript = $('<div class="table-operation text-button">ADD</div>');
     var table = $('<table class="table table-condensed sub-table"></table>');
@@ -31,19 +32,21 @@ export class DeveloperConsole {
         '<p>To learn how to build plugins for freeboard, please visit <a target="_blank" href="http://freeboard.github.io/freeboard/docs/plugin_example.html">http://freeboard.github.io/freeboard/docs/plugin_example.html</a></p>'
       );
 
-    function refreshScript(scriptURL) {
+    function refreshScript(scriptURL: string) {
       $('script[src="' + scriptURL + '"]').remove();
     }
 
-    function addNewScriptRow(scriptURL) {
-      var tableRow = $('<tr></tr>');
-      var tableOperations = $('<ul class="board-toolbar"></ul>');
-      var scriptInput = $(
+    function addNewScriptRow(scriptURL?: string) {
+      var tableRow = $<HTMLTableRowElement>('<tr></tr>');
+      var tableOperations = $<HTMLUListElement>(
+        '<ul class="board-toolbar"></ul>'
+      );
+      var scriptInput = $<HTMLInputElement>(
         '<input class="table-row-value" style="width:100%;" type="text">'
       );
-      var deleteOperation = $(
+      var deleteOperation = $<HTMLLIElement>(
         '<li><i class="icon-trash icon-white"></i></li>'
-      ).click(function (e) {
+      ).on('click', (e) => {
         pluginScriptsInputs = _.without(pluginScriptsInputs, scriptInput);
         tableRow.remove();
       });
@@ -62,27 +65,27 @@ export class DeveloperConsole {
       );
     }
 
-    _.each(theFreeboardModel.plugins(), function (pluginSource) {
+    _.each(this.theFreeboardModel.plugins(), function (pluginSource) {
       addNewScriptRow(pluginSource);
     });
 
-    addScript.click(function (e) {
+    addScript.on('click', (e) => {
       addNewScriptRow();
     });
 
-    new DialogBox(container, 'Developer Console', 'OK', null, function () {
+    new DialogBox(container, 'Developer Console', 'OK', null, () => {
       // Unload our previous scripts
-      _.each(theFreeboardModel.plugins(), function (pluginSource) {
+      _.each(this.theFreeboardModel.plugins(), function (pluginSource) {
         $('script[src^="' + pluginSource + '"]').remove();
       });
 
-      theFreeboardModel.plugins.removeAll();
+      this.theFreeboardModel.plugins.removeAll();
 
-      _.each(pluginScriptsInputs, function (scriptInput) {
-        var scriptURL = scriptInput.val();
+      _.each(pluginScriptsInputs, (scriptInput) => {
+        var scriptURL = scriptInput.val() as string | string[];
 
         if (scriptURL && scriptURL.length > 0) {
-          theFreeboardModel.addPluginSource(scriptURL);
+          this.theFreeboardModel.addPluginSource(scriptURL);
 
           // Load the script with a cache buster
           head.js(scriptURL + '?' + Date.now());

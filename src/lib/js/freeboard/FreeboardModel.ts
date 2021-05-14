@@ -21,7 +21,7 @@ export class FreeboardModel {
   ) {
     var SERIALIZATION_VERSION = 1;
 
-    this.allow_edit.subscribe(function (newValue) {
+    this.allow_edit.subscribe((newValue) => {
       if (newValue) {
         $('#main-header').show();
       } else {
@@ -31,12 +31,12 @@ export class FreeboardModel {
 
     this._datasourceTypes = ko.observable();
     this.datasourceTypes = ko.computed({
-      read: function () {
+      read: () => {
         this._datasourceTypes();
 
         var returnTypes = [];
 
-        _.each(datasourcePlugins, function (datasourcePluginType) {
+        _.each(datasourcePlugins, (datasourcePluginType) => {
           var typeName = datasourcePluginType.type_name;
           var displayName = typeName;
 
@@ -56,12 +56,12 @@ export class FreeboardModel {
 
     this._widgetTypes = ko.observable();
     this.widgetTypes = ko.computed({
-      read: function () {
+      read: () => {
         this._widgetTypes();
 
         var returnTypes = [];
 
-        _.each(widgetPlugins, function (widgetPluginType) {
+        _.each(widgetPlugins, (widgetPluginType) => {
           var typeName = widgetPluginType.type_name;
           var displayName = typeName;
 
@@ -89,13 +89,13 @@ export class FreeboardModel {
   public serialize() {
     var panes = [];
 
-    _.each(this.panes(), function (pane) {
+    _.each(this.panes(), (pane) => {
       panes.push(pane.serialize());
     });
 
     var datasources = [];
 
-    _.each(this.datasources(), function (datasource) {
+    _.each(this.datasources(), (datasource) => {
       datasources.push(datasource.serialize());
     });
 
@@ -124,17 +124,17 @@ export class FreeboardModel {
       this.version = object.version || 0;
       this.header_image(object.header_image);
 
-      _.each(object.datasources, function (datasourceConfig) {
+      _.each(object.datasources, (datasourceConfig) => {
         var datasource = new DatasourceModel(this, datasourcePlugins);
         datasource.deserialize(datasourceConfig);
         this.addDatasource(datasource);
       });
 
-      var sortedPanes = _.sortBy(object.panes, function (pane) {
+      var sortedPanes = _.sortBy(object.panes, (pane) => {
         return freeboardUI.getPositionForScreenSize(pane).row;
       });
 
-      _.each(sortedPanes, function (paneConfig) {
+      _.each(sortedPanes, (paneConfig) => {
         var pane = new PaneModel(this, widgetPlugins);
         pane.deserialize(paneConfig);
         this.panes.push(pane);
@@ -152,13 +152,13 @@ export class FreeboardModel {
     }
 
     // This could have been this.plugins(object.plugins), but for some weird reason head.js was causing a function to be added to the list of plugins.
-    _.each(object.plugins, function (plugin) {
+    _.each(object.plugins, (plugin) => {
       this.addPluginSource(plugin);
     });
 
     // Load any plugins referenced in this definition
     if (_.isArray(object.plugins) && object.plugins.length > 0) {
-      head.js(object.plugins, function () {
+      head.js(object.plugins, () => {
         finishLoad();
       });
     } else {
@@ -171,8 +171,8 @@ export class FreeboardModel {
 
     this.datasourceData[datasourceName] = newData;
 
-    _.each(this.panes(), function (pane) {
-      _.each(pane.widgets(), function (widget) {
+    _.each(this.panes(), (pane) => {
+      _.each(pane.widgets(), (widget) => {
         widget.processDatasourceUpdate(datasourceName);
       });
     });
@@ -181,11 +181,11 @@ export class FreeboardModel {
   public clearDashboard() {
     this.freeboardUI.removeAllPanes();
 
-    _.each(this.datasources(), function (datasource) {
+    _.each(this.datasources(), (datasource) => {
       datasource.dispose();
     });
 
-    _.each(this.panes(), function (pane) {
+    _.each(this.panes(), (pane) => {
       pane.dispose();
     });
 
@@ -196,7 +196,7 @@ export class FreeboardModel {
 
   public loadDashboard(dashboardData, callback) {
     freeboardUI.showLoadingIndicator(true);
-    this.deserialize(dashboardData, function () {
+    this.deserialize(dashboardData, () => {
       freeboardUI.showLoadingIndicator(false);
 
       if (_.isFunction(callback)) {
@@ -212,14 +212,14 @@ export class FreeboardModel {
     if (window.File && window.FileReader && window.FileList && window.Blob) {
       var input = document.createElement('input');
       input.type = 'file';
-      $(input).on('change', function (event) {
+      $(input).on('change', (event) => {
         var files = event.target.files;
 
         if (files && files.length > 0) {
           var file = files[0];
           var reader = new FileReader();
 
-          reader.addEventListener('load', function (fileReaderEvent) {
+          reader.addEventListener('load', (fileReaderEvent) => {
             var textFile = fileReaderEvent.target;
             var jsonObject = JSON.parse(textFile.result);
 
@@ -264,7 +264,7 @@ export class FreeboardModel {
     a.href = window.URL.createObjectURL(blob);
     a.download = 'dashboard.json';
     a.target = '_self';
-    a.click();
+    a.on('click');
   }
 
   public addDatasource(datasource) {
@@ -308,7 +308,7 @@ export class FreeboardModel {
   }
 
   public deleteWidget(widget) {
-    ko.utils.arrayForEach(this.panes(), function (pane) {
+    ko.utils.arrayForEach(this.panes(), (pane) => {
       pane.widgets.remove(widget);
     });
 

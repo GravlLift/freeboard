@@ -56,7 +56,7 @@ export class PaneModel {
     // Give the animation a moment to complete. Really hacky.
     // TODO: Make less hacky. Also, doesn't work when screen resizes.
     setTimeout(() => {
-      _.each(this.widgets(), function (widget) {
+      _.each(this.widgets(), (widget) => {
         widget.processSizeChange();
       });
     }, 1000);
@@ -65,7 +65,7 @@ export class PaneModel {
   public getCalculatedHeight() {
     var sumHeights = _.reduce(
       this.widgets(),
-      function (memo, widget) {
+      (memo, widget) => {
         return memo + widget.height();
       },
       0
@@ -121,7 +121,7 @@ export class PaneModel {
   }
 
   public dispose() {
-    _.each(this.widgets(), function (widget) {
+    _.each(this.widgets(), (widget) => {
       widget.dispose();
     });
   }

@@ -18,7 +18,7 @@ export class DialogBox {
     var modalDialog = $('<div class="modal"></div>');
 
     function closeModal() {
-      overlay.fadeOut(200, function () {
+      overlay.fadeOut(200, () => {
         $(this).remove();
       });
     }
@@ -34,7 +34,7 @@ export class DialogBox {
     if (okTitle) {
       $('<span id="dialog-ok" class="text-button">' + okTitle + '</span>')
         .appendTo(footer)
-        .on('click', function () {
+        .on('click', () => {
           var hold = false;
 
           if (_.isFunction(okCallback)) {
@@ -54,7 +54,7 @@ export class DialogBox {
           '</span>'
       )
         .appendTo(footer)
-        .on('click', function () {
+        .on('click', () => {
           closeModal();
         });
     }

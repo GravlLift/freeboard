@@ -3,7 +3,7 @@ import ko from 'knockout';
 import { DialogBox } from './DialogBox';
 import { FreeboardModel } from './FreeboardModel';
 import { JSEditor } from './JSEditor';
-import { FreeboardPluginDefinition } from './Plugin';
+import { FreeboardPluginDefinition, Settings } from './Plugin';
 import { ValueEditor } from './ValueEditor';
 import { PluginEditor } from './PluginEditor';
 import { DeveloperConsole } from './DeveloperConsole';
@@ -19,7 +19,7 @@ import { FreeboardUI } from './FreeboardUI';
 // └────────────────────────────────────────────────────────────────────┘ \\
 
 // Jquery plugin to watch for attribute changes
-(function ($) {
+(($) => {
   function isDOMAttrModifiedSupported() {
     var p = document.createElement('p');
     var flag = false;
@@ -27,7 +27,7 @@ import { FreeboardUI } from './FreeboardUI';
     if (p.addEventListener) {
       p.addEventListener(
         'DOMAttrModified',
-        function () {
+        () => {
           flag = true;
         },
         false
@@ -72,7 +72,7 @@ import { FreeboardUI } from './FreeboardUI';
   var MutationObserver =
     window.MutationObserver || window.WebKitMutationObserver;
 
-  $.fn.attrchange = function (o) {
+  $.fn.attrchange = (o) => {
     var cfg = {
       trackValues: false,
       callback: $.noop,
@@ -87,7 +87,7 @@ import { FreeboardUI } from './FreeboardUI';
 
     if (cfg.trackValues) {
       //get attributes old value
-      $(this).each(function (i, el) {
+      $(this).each((i, el) => {
         var attributes = {};
         for (
           var attr, i = 0, attrs = el.attributes, l = attrs.length;
@@ -114,8 +114,8 @@ import { FreeboardUI } from './FreeboardUI';
         attributeOldValue: cfg.trackValues,
       };
 
-      var observer = new MutationObserver(function (mutations) {
-        mutations.forEach(function (e) {
+      var observer = new MutationObserver((mutations) => {
+        mutations.forEach((e) => {
           var _this = e.target;
 
           //get new value if trackValues is true
@@ -131,14 +131,14 @@ import { FreeboardUI } from './FreeboardUI';
         });
       });
 
-      return this.each(function () {
+      return this.each(() => {
         observer.observe(this, mOptions);
       });
     } else if (isDOMAttrModifiedSupported()) {
       //Opera
       //Good old Mutation Events but the performance is no good
       //http://hacks.mozilla.org/2012/05/dom-mutationobserver-reacting-to-dom-changes-without-killing-browser-performance/
-      return this.on('DOMAttrModified', function (event) {
+      return this.on('DOMAttrModified', (event) => {
         if (event.originalEvent) {
           event = event.originalEvent;
         } //jQuery normalization is not required for us
@@ -148,7 +148,7 @@ import { FreeboardUI } from './FreeboardUI';
       });
     } else if ('onpropertychange' in document.body) {
       //works only in IE
-      return this.on('propertychange', function (e) {
+      return this.on('propertychange', (e) => {
         e.attributeName = window.event.propertyName;
         //to set the attr old value
         checkAttributes.call($(this), cfg.trackValues, e);
@@ -160,31 +160,31 @@ import { FreeboardUI } from './FreeboardUI';
   };
 })(jQuery);
 
-(function (jQuery) {
+((jQuery) => {
   jQuery.eventEmitter = {
-    _JQInit: function () {
+    _JQInit: () => {
       this._JQ = jQuery(this);
     },
-    emit: function (evt, data) {
+    emit: (evt, data) => {
       !this._JQ && this._JQInit();
       this._JQ.trigger(evt, data);
     },
-    once: function (evt, handler) {
+    once: (evt, handler) => {
       !this._JQ && this._JQInit();
       this._JQ.one(evt, handler);
     },
-    on: function (evt, handler) {
+    on: (evt, handler) => {
       !this._JQ && this._JQInit();
       this._JQ.bind(evt, handler);
     },
-    off: function (evt, handler) {
+    off: (evt, handler) => {
       !this._JQ && this._JQInit();
       this._JQ.unbind(evt, handler);
     },
   };
 })(jQuery);
 
-var freeboard = (function () {
+var freeboard = (() => {
   var datasourcePlugins = {};
   var widgetPlugins = {};
 
@@ -220,7 +220,7 @@ var freeboard = (function () {
     ) {
       var options = ko.unwrap(valueAccessor());
 
-      var types = {};
+      var types: {} = {};
       var settings = undefined;
       var title = '';
 
@@ -234,27 +234,21 @@ var freeboard = (function () {
         title = 'Pane';
       }
 
-      $(element).click(function (event) {
+      $(element).on('click', (event) => {
         if (options.operation == 'delete') {
           var phraseElement = $(
             '<p>Are you sure you want to delete this ' + title + '?</p>'
           );
-          new DialogBox(
-            phraseElement,
-            'Confirm Delete',
-            'Yes',
-            'No',
-            function () {
-              if (options.type == 'datasource') {
-                theFreeboardModel.deleteDatasource(viewModel);
-              } else if (options.type == 'widget') {
-                theFreeboardModel.deleteWidget(viewModel);
-              } else if (options.type == 'pane') {
-                theFreeboardModel.deletePane(viewModel);
-              }
-              return false;
+          new DialogBox(phraseElement, 'Confirm Delete', 'Yes', 'No', () => {
+            if (options.type == 'datasource') {
+              theFreeboardModel.deleteDatasource(viewModel);
+            } else if (options.type == 'widget') {
+              theFreeboardModel.deleteWidget(viewModel);
+            } else if (options.type == 'pane') {
+              theFreeboardModel.deletePane(viewModel);
             }
-          );
+            return false;
+          });
         } else {
           var instanceType = undefined;
 
@@ -306,7 +300,7 @@ var freeboard = (function () {
             types,
             instanceType,
             settings,
-            function (newSettings) {
+            (newSettings: Settings) => {
               if (options.operation == 'add') {
                 if (options.type == 'datasource') {
                   var newViewModel = new DatasourceModel(
@@ -437,7 +431,7 @@ var freeboard = (function () {
       : decodeURIComponent(results[1].replace(/\+/g, ' '));
   }
 
-  $(function () {
+  $(() => {
     //DOM Ready
     // Show the loading indicator when we first load
     freeboardUI.showLoadingIndicator(true);
@@ -448,7 +442,7 @@ var freeboard = (function () {
       freeboardUI.processResize(true);
     }
 
-    $(window).resize(function () {
+    $(window).resize(() => {
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(resizeEnd, 500);
     });
@@ -456,7 +450,7 @@ var freeboard = (function () {
 
   // PUBLIC FUNCTIONS
   return {
-    initialize: function (allowEdit, finishedCallback) {
+    initialize: (allowEdit, finishedCallback) => {
       ko.applyBindings(theFreeboardModel);
 
       // Check to see if we have a query param called load. If so, we should load that dashboard initially
@@ -465,7 +459,7 @@ var freeboard = (function () {
       if (freeboardLocation != '') {
         $.ajax({
           url: freeboardLocation,
-          success: function (data) {
+          success: (data) => {
             theFreeboardModel.loadDashboard(data);
 
             if (_.isFunction(finishedCallback)) {
@@ -485,22 +479,22 @@ var freeboard = (function () {
         freeboard.emit('initialized');
       }
     },
-    newDashboard: function () {
+    newDashboard: () => {
       theFreeboardModel.loadDashboard({ allow_edit: true });
     },
-    loadDashboard: function (configuration, callback) {
+    loadDashboard: (configuration, callback) => {
       theFreeboardModel.loadDashboard(configuration, callback);
     },
-    serialize: function () {
+    serialize: () => {
       return theFreeboardModel.serialize();
     },
-    setEditing: function (editing, animate) {
+    setEditing: (editing, animate) => {
       theFreeboardModel.setEditing(editing, animate);
     },
-    isEditing: function () {
+    isEditing: () => {
       return theFreeboardModel.isEditing();
     },
-    loadDatasourcePlugin: function (plugin: FreeboardPluginDefinition) {
+    loadDatasourcePlugin: (plugin: FreeboardPluginDefinition) => {
       if (_.isUndefined(plugin.display_name)) {
         plugin.display_name = plugin.type_name;
       }
@@ -517,10 +511,10 @@ var freeboard = (function () {
       datasourcePlugins[plugin.type_name] = plugin;
       theFreeboardModel._datasourceTypes.valueHasMutated();
     },
-    resize: function () {
+    resize: () => {
       freeboardUI.processResize(true);
     },
-    loadWidgetPlugin: function (plugin) {
+    loadWidgetPlugin: (plugin) => {
       if (_.isUndefined(plugin.display_name)) {
         plugin.display_name = plugin.type_name;
       }
@@ -530,10 +524,10 @@ var freeboard = (function () {
       theFreeboardModel._widgetTypes.valueHasMutated();
     },
     // To be used if freeboard is going to load dynamic assets from a different root URL
-    setAssetRoot: function (assetRoot) {
+    setAssetRoot: (assetRoot) => {
       jsEditor.setAssetRoot(assetRoot);
     },
-    addStyle: function (selector, rules) {
+    addStyle: (selector, rules) => {
       var styleString = selector + '{' + rules + '}';
 
       var styleElement = $('style#fb-styles');
@@ -549,7 +543,7 @@ var freeboard = (function () {
         styleElement.text(styleElement.text() + styleString);
       }
     },
-    showLoadingIndicator: function (show) {
+    showLoadingIndicator: (show) => {
       freeboardUI.showLoadingIndicator(show);
     },
     showDialog: function (
@@ -561,11 +555,11 @@ var freeboard = (function () {
     ) {
       new DialogBox(contentElement, title, okTitle, cancelTitle, okCallback);
     },
-    getDatasourceSettings: function (datasourceName) {
+    getDatasourceSettings: (datasourceName) => {
       var datasources = theFreeboardModel.datasources();
 
       // Find the datasource with the name specified
-      var datasource = _.find(datasources, function (datasourceModel) {
+      var datasource = _.find(datasources, (datasourceModel) => {
         return datasourceModel.name() === datasourceName;
       });
 
@@ -575,11 +569,11 @@ var freeboard = (function () {
         return null;
       }
     },
-    setDatasourceSettings: function (datasourceName, settings) {
+    setDatasourceSettings: (datasourceName, settings) => {
       var datasources = theFreeboardModel.datasources();
 
       // Find the datasource with the name specified
-      var datasource = _.find(datasources, function (datasourceModel) {
+      var datasource = _.find(datasources, (datasourceModel) => {
         return datasourceModel.name() === datasourceName;
       });
 
@@ -591,19 +585,19 @@ var freeboard = (function () {
       var combinedSettings = _.defaults(settings, datasource.settings());
       datasource.settings(combinedSettings);
     },
-    getStyleString: function (name) {
+    getStyleString: (name) => {
       var returnString = '';
 
-      _.each(currentStyle[name], function (value, name) {
+      _.each(currentStyle[name], (value, name) => {
         returnString = returnString + name + ':' + value + ';';
       });
 
       return returnString;
     },
-    getStyleObject: function (name) {
+    getStyleObject: (name) => {
       return currentStyle[name];
     },
-    showDeveloperConsole: function () {
+    showDeveloperConsole: () => {
       developerConsole.showDeveloperConsole();
     },
   };

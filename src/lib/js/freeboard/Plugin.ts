@@ -15,6 +15,7 @@ export interface FreeboardPluginDefinition {
 export type SettingsType =
   | 'text'
   | 'number'
+  | 'integer'
   | 'calculated'
   | 'boolean'
   | 'option'
@@ -28,7 +29,8 @@ export interface Settings {
   description?: string;
   required?: boolean;
   options?: { name: string; value: string }[];
-  settings?: Settings[];
+  settings?: { [key: string]: any } | Settings | Settings[];
+  multi_input: string;
   [key: string]: any;
 }
 

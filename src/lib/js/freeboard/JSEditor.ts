@@ -38,7 +38,7 @@ export class JSEditor {
 
     var closeButton = $(
       '<span id="dialog-cancel" class="text-button">Close</span>'
-    ).on('click', function () {
+    ).on('click', () => {
       if (callback) {
         var newValue = codeMirrorEditor.getValue();
 

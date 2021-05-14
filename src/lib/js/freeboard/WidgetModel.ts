@@ -20,7 +20,7 @@ export class WidgetModel {
 
   public settings = ko.observable<Settings>();
   public height = ko.computed({
-    read: function () {
+    read: () => {
       this._heightUpdate();
 
       if (
@@ -93,9 +93,8 @@ export class WidgetModel {
   }
 
   public processDatasourceUpdate(datasourceName: string) {
-    var refreshSettingNames = this.datasourceRefreshNotifications[
-      datasourceName
-    ];
+    var refreshSettingNames =
+      this.datasourceRefreshNotifications[datasourceName];
 
     if (_.isArray(refreshSettingNames)) {
       _.each(refreshSettingNames, (settingName) => {
@@ -207,9 +206,8 @@ export class WidgetModel {
 
           while ((matches = datasourceRegex.exec(script))) {
             var dsName = matches[1] || matches[2];
-            var refreshSettingNames = this.datasourceRefreshNotifications[
-              dsName
-            ];
+            var refreshSettingNames =
+              this.datasourceRefreshNotifications[dsName];
 
             if (_.isUndefined(refreshSettingNames)) {
               refreshSettingNames = [];

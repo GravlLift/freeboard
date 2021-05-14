@@ -10,6 +10,19 @@ export enum EXPECTED_TYPE {
   BOOLEAN = 'boolean',
 }
 
+interface Datasource {
+  name: () => string;
+  getDataRepresentation: (path: string) => any;
+}
+
+interface AutocompleteOptions {
+  value: string | number;
+  entity: any;
+  precede_char: string;
+  follow_char: string;
+  preview?: any;
+}
+
 export class ValueEditor {
   private _veDatasourceRegex = new RegExp(
     '.*datasources\\["([^"]*)("\\])?(.*)$'
@@ -17,8 +30,8 @@ export class ValueEditor {
 
   private dropdown: JQuery<HTMLUListElement> | null = null;
   private selectedOptionIndex = 0;
-  private _autocompleteOptions = [];
-  private currentValue = null;
+  private _autocompleteOptions: AutocompleteOptions[] = [];
+  private currentValue: any = null;
 
   constructor(private theFreeboardModel: FreeboardModel) {}
 
@@ -71,17 +84,17 @@ export class ValueEditor {
 
   private _autocompleteFromDatasource(
     inputString: string,
-    datasources: ko.ObservableArray<any>,
+    datasources: Datasource[],
     expectsType: EXPECTED_TYPE
   ) {
     var match = this._veDatasourceRegex.exec(inputString);
 
-    var options = [];
+    var options: AutocompleteOptions[] = [];
 
     if (match) {
       // Editor value is: datasources["; List all datasources
       if (match[1] == '') {
-        _.each(datasources, (datasource) => {
+        _.each(datasources, (datasource: Datasource) => {
           options.push({
             value: datasource.name(),
             entity: undefined,
@@ -94,7 +107,7 @@ export class ValueEditor {
       else if (match[1] != '' && _.isUndefined(match[2])) {
         var replacementString = match[1];
 
-        _.each(datasources, (datasource) => {
+        _.each(datasources, (datasource: Datasource) => {
           var dsName = datasource.name();
 
           if (
@@ -113,9 +126,12 @@ export class ValueEditor {
       // Editor value matches a datasources; parse JSON in order to populate list
       else {
         // We already have a datasource selected; find it
-        var datasource = _.find(datasources, function (datasource) {
-          return match && datasource.name() === match[1];
-        });
+        var datasource: Datasource = _.find(
+          datasources,
+          (datasource: Datasource) => {
+            return match && datasource.name() === match[1];
+          }
+        );
 
         if (!_.isUndefined(datasource)) {
           var dataPath = 'data';
@@ -178,7 +194,7 @@ export class ValueEditor {
   }
 
   private _renderAutocompleteDropdown(
-    element: any,
+    element: JQuery,
     expectsType: EXPECTED_TYPE
   ) {
     var inputString = $(element)
@@ -195,9 +211,9 @@ export class ValueEditor {
       expectsType
     );
 
-    if (_autocompleteOptions.length > 0) {
+    if (this._autocompleteOptions.length > 0) {
       if (!this.dropdown) {
-        this.dropdown = $(
+        this.dropdown = $<HTMLUListElement>(
           '<ul id="value-selector" class="value-dropdown"></ul>'
         )
           .insertAfter(element)
@@ -228,36 +244,36 @@ export class ValueEditor {
         }
       });
     } else {
-      _checkCurrentValueType(element, expectsType);
+      this._checkCurrentValueType(element, expectsType);
       $(element).next('ul#value-selector').remove();
-      dropdown = null;
-      selectedOptionIndex = -1;
+      this.dropdown = null;
+      this.selectedOptionIndex = -1;
     }
   }
 
   private _renderAutocompleteDropdownOption(
-    element,
-    inputString,
-    option,
-    currentIndex
+    element: JQuery,
+    inputString: string,
+    option: AutocompleteOptions,
+    currentIndex: number
   ) {
     var optionLabel = option.value;
     if (option.preview) {
       optionLabel =
         optionLabel + "<span class='preview'>" + option.preview + '</span>';
     }
-    var li = $('<li>' + optionLabel + '</li>')
-      .appendTo(dropdown)
-      .mouseenter(function () {
+    var li = $<HTMLLIElement>('<li>' + optionLabel + '</li>')
+      .appendTo(this.dropdown)
+      .on('mouseenter', () => {
         $(this).trigger('freeboard-select');
       })
-      .mousedown(function (event) {
+      .on('mousedown', (event) => {
         $(this).trigger('freeboard-insertValue');
         event.preventDefault();
       })
       .data('freeboard-optionIndex', currentIndex)
       .data('freeboard-optionValue', option.value)
-      .bind('freeboard-insertValue', function () {
+      .on('freeboard-insertValue', () => {
         var optionValue = option.value;
         optionValue = option.precede_char + optionValue + option.follow_char;
 
@@ -265,7 +281,7 @@ export class ValueEditor {
         if (replacementIndex != -1) {
           $(element).replaceTextAt(
             replacementIndex + 1,
-            $(element).val().length,
+            ($(element).val() as string).length,
             optionValue
           );
         } else {
@@ -275,7 +291,7 @@ export class ValueEditor {
         this.currentValue = option.entity;
         $(element).triggerHandler('mouseup');
       })
-      .bind('freeboard-select', function () {
+      .on('freeboard-select', () => {
         $(this).parent().find('li.selected').removeClass('selected');
         $(this).addClass('selected');
         this.selectedOptionIndex = $(this).data('freeboard-optionIndex');
@@ -286,10 +302,10 @@ export class ValueEditor {
   public createValueEditor(element: any, expectsType = EXPECTED_TYPE.ANY) {
     $(element)
       .addClass('calculated-value-input')
-      .on('keyup mouseup freeboard-eval', function (event) {
+      .on('keyup mouseup freeboard-eval', (event) => {
         // Ignore arrow keys and enter keys
         if (
-          dropdown &&
+          this.dropdown &&
           event.type == 'keyup' &&
           (event.keyCode == 38 || event.keyCode == 40 || event.keyCode == 13)
         ) {
@@ -298,11 +314,11 @@ export class ValueEditor {
         }
         this._renderAutocompleteDropdown(element, expectsType);
       })
-      .on('focus', function () {
+      .on('focus', () => {
         $(element).css({ 'z-index': 3001 });
         this._resizeValueEditor(element);
       })
-      .on('focusout', function () {
+      .on('focusout', () => {
         this._checkCurrentValueType(element, expectsType);
         $(element).css({
           height: '',
@@ -312,25 +328,25 @@ export class ValueEditor {
         this.dropdown = null;
         this.selectedOptionIndex = -1;
       })
-      .on('keydown', function (event) {
+      .on('keydown', (event) => {
         if (this.dropdown) {
-          if (event.keyCode == 38 || event.keyCode == 40) {
+          if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
             // Handle Arrow keys
             event.preventDefault();
 
-            var optionItems = $(this.dropdown).find('li');
+            var optionItems = $(this.dropdown).find<HTMLLIElement>('li');
 
-            if (event.keyCode == 38) {
+            if (event.key === 'ArrowUp') {
               // Up Arrow
               this.selectedOptionIndex--;
-            } else if (event.keyCode == 40) {
+            } else if (event.key === 'ArrowDown') {
               // Down Arrow
               this.selectedOptionIndex++;
             }
 
             if (this.selectedOptionIndex < 0) {
-              this.selectedOptionIndex = optionItems.size() - 1;
-            } else if (this.selectedOptionIndex >= optionItems.size()) {
+              this.selectedOptionIndex = optionItems.length - 1;
+            } else if (this.selectedOptionIndex >= optionItems.length) {
               this.selectedOptionIndex = 0;
             }
 
@@ -338,7 +354,7 @@ export class ValueEditor {
 
             optionElement.trigger('freeboard-select');
             $(this.dropdown).scrollTop($(optionElement).position().top);
-          } else if (event.keyCode == 13) {
+          } else if (event.key === 'Enter') {
             // Handle enter key
             event.preventDefault();
 

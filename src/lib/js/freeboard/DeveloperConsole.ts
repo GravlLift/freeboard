@@ -65,7 +65,7 @@ export class DeveloperConsole {
       );
     }
 
-    _.each(this.theFreeboardModel.plugins(), function (pluginSource) {
+    _.each(this.theFreeboardModel.plugins(), (pluginSource) => {
       addNewScriptRow(pluginSource);
     });
 
@@ -75,7 +75,7 @@ export class DeveloperConsole {
 
     new DialogBox(container, 'Developer Console', 'OK', null, () => {
       // Unload our previous scripts
-      _.each(this.theFreeboardModel.plugins(), function (pluginSource) {
+      _.each(this.theFreeboardModel.plugins(), (pluginSource) => {
         $('script[src^="' + pluginSource + '"]').remove();
       });
 

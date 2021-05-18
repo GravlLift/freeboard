@@ -8,6 +8,8 @@ import { ValueEditor } from './ValueEditor';
 import { PluginEditor } from './PluginEditor';
 import { DeveloperConsole } from './DeveloperConsole';
 import { FreeboardUI } from './FreeboardUI';
+import { WidgetModel } from './WidgetModel';
+import { DatasourceModel } from './DatasourceModel';
 
 // ┌────────────────────────────────────────────────────────────────────┐ \\
 // │ F R E E B O A R D                                                  │ \\
@@ -69,8 +71,7 @@ import { FreeboardUI } from './FreeboardUI';
   }
 
   //initialize Mutation Observer
-  var MutationObserver =
-    window.MutationObserver || window.WebKitMutationObserver;
+  var MutationObserver = window.MutationObserver;
 
   $.fn.attrchange = (o) => {
     var cfg = {
@@ -88,7 +89,7 @@ import { FreeboardUI } from './FreeboardUI';
     if (cfg.trackValues) {
       //get attributes old value
       $(this).each((i, el) => {
-        var attributes = {};
+        var attributes: { [x: string]: string } = {};
         for (
           var attr, i = 0, attrs = el.attributes, l = attrs.length;
           i < l;
@@ -162,22 +163,22 @@ import { FreeboardUI } from './FreeboardUI';
 
 ((jQuery) => {
   jQuery.eventEmitter = {
-    _JQInit: () => {
+    _JQInit() {
       this._JQ = jQuery(this);
     },
-    emit: (evt, data) => {
+    emit(evt, data) {
       !this._JQ && this._JQInit();
       this._JQ.trigger(evt, data);
     },
-    once: (evt, handler) => {
+    once(evt, handler) {
       !this._JQ && this._JQInit();
       this._JQ.one(evt, handler);
     },
-    on: (evt, handler) => {
+    on(evt, handler) {
       !this._JQ && this._JQInit();
       this._JQ.bind(evt, handler);
     },
-    off: (evt, handler) => {
+    off(evt, handler) {
       !this._JQ && this._JQInit();
       this._JQ.unbind(evt, handler);
     },
@@ -436,13 +437,13 @@ var freeboard = (() => {
     // Show the loading indicator when we first load
     freeboardUI.showLoadingIndicator(true);
 
-    var resizeTimer;
+    var resizeTimer: NodeJS.Timeout;
 
     function resizeEnd() {
       freeboardUI.processResize(true);
     }
 
-    $(window).resize(() => {
+    $(window).on('resize', () => {
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(resizeEnd, 500);
     });

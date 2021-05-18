@@ -1,10 +1,12 @@
 export interface FreeboardPluginDefinition {
-  type_name: string;
+  type_name: SettingsType;
+  settings: Settings | Settings[];
   display_name?: string;
   description?: string;
   external_scripts?: string[];
-  settings: Settings[];
   fill_size?: boolean;
+  typeahead_source?: string;
+  typeahead_data_segment: string | number | symbol;
   newInstance: (
     settings: Settings,
     newInstanceCallback: (newInstance: FreeboardPlugin) => void,
@@ -21,18 +23,59 @@ export type SettingsType =
   | 'option'
   | 'array';
 
-export interface Settings {
+interface BaseSettings {
   name: string;
   display_name?: string;
   type: SettingsType;
-  default_value?: string;
   description?: string;
   required?: boolean;
-  options?: { name: string; value: string }[];
-  settings?: { [key: string]: any } | Settings | Settings[];
-  multi_input: string;
   [key: string]: any;
 }
+
+export interface TextSettings extends BaseSettings {
+  type: 'text';
+  default_value?: string;
+}
+
+export interface NumberSettings extends BaseSettings {
+  type: 'number';
+  default_value?: number;
+}
+
+export interface IntegerSettings extends BaseSettings {
+  type: 'integer';
+  default_value?: number;
+}
+
+export interface CalculatedSettings extends BaseSettings {
+  type: 'calculated';
+  default_value?: any;
+  multi_input: string;
+}
+
+export interface BooleanSettings extends BaseSettings {
+  type: 'boolean';
+  default_value?: boolean;
+}
+
+export interface OptionSettings extends BaseSettings {
+  type: 'option';
+  options: { name: string; value: string }[];
+}
+
+export interface ArraySettings extends BaseSettings {
+  type: 'array';
+  settings?: Settings | Settings[];
+}
+
+export type Settings =
+  | TextSettings
+  | NumberSettings
+  | IntegerSettings
+  | CalculatedSettings
+  | BooleanSettings
+  | OptionSettings
+  | ArraySettings;
 
 export abstract class FreeboardPlugin {
   constructor(

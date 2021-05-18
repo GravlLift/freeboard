@@ -106,7 +106,7 @@ export class FreeboardModel {
       plugins: this.plugins(),
       panes: panes,
       datasources: datasources,
-      columns: freeboardUI.getUserColumns(),
+      columns: this.freeboardUI.getUserColumns(),
     };
   }
 
@@ -194,10 +194,13 @@ export class FreeboardModel {
     this.panes.removeAll();
   }
 
-  public loadDashboard(dashboardData, callback) {
-    freeboardUI.showLoadingIndicator(true);
+  public loadDashboard(
+    dashboardData: { allow_edit: boolean },
+    callback?: () => void
+  ) {
+    this.freeboardUI.showLoadingIndicator(true);
     this.deserialize(dashboardData, () => {
-      freeboardUI.showLoadingIndicator(false);
+      this.freeboardUI.showLoadingIndicator(false);
 
       if (_.isFunction(callback)) {
         callback();
@@ -264,7 +267,7 @@ export class FreeboardModel {
     a.href = window.URL.createObjectURL(blob);
     a.download = 'dashboard.json';
     a.target = '_self';
-    a.on('click');
+    $(a).trigger('click');
   }
 
   public addDatasource(datasource) {
@@ -283,19 +286,19 @@ export class FreeboardModel {
   }
 
   public addGridColumnLeft() {
-    freeboardUI.addGridColumnLeft();
+    this.freeboardUI.addGridColumnLeft();
   }
 
   public addGridColumnRight() {
-    freeboardUI.addGridColumnRight();
+    this.freeboardUI.addGridColumnRight();
   }
 
   public subGridColumnLeft() {
-    freeboardUI.subGridColumnLeft();
+    this.freeboardUI.subGridColumnLeft();
   }
 
   public subGridColumnRight() {
-    freeboardUI.subGridColumnRight();
+    this.freeboardUI.subGridColumnRight();
   }
 
   public addPane(pane) {
@@ -339,7 +342,7 @@ export class FreeboardModel {
       $('#board-content').animate({ top: '20' }, animateLength);
       $('#main-header').data().shown = false;
       $('.sub-section').unbind();
-      freeboardUI.disableGrid();
+      this.freeboardUI.disableGrid();
     } else {
       $('#toggle-header-icon')
         .addClass('icon-chevron-up')
@@ -351,11 +354,11 @@ export class FreeboardModel {
         animateLength
       );
       $('#main-header').data().shown = true;
-      freeboardUI.attachWidgetEditIcons($('.sub-section'));
-      freeboardUI.enableGrid();
+      this.freeboardUI.attachWidgetEditIcons($('.sub-section'));
+      this.freeboardUI.enableGrid();
     }
 
-    freeboardUI.showPaneEditIcons(editing, animate);
+    this.freeboardUI.showPaneEditIcons(editing, animate);
   }
 
   public toggleEditing() {

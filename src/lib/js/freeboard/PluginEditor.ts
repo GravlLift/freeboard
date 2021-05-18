@@ -1,7 +1,12 @@
 import _ from 'underscore';
 import { DialogBox } from './DialogBox';
 import { JSEditor } from './JSEditor';
-import { FreeboardPluginDefinition, Settings, SettingsType } from './Plugin';
+import {
+  CalculatedSettings,
+  FreeboardPluginDefinition,
+  Settings,
+  SettingsType,
+} from './Plugin';
 import { ValueEditor } from './ValueEditor';
 
 export class PluginEditor {
@@ -21,101 +26,107 @@ export class PluginEditor {
     }
   }
 
-  private _isNumerical(n) {
+  private _isNumerical(n: any) {
     return !isNaN(parseFloat(n)) && isFinite(n);
   }
 
-  // private _appendCalculatedSettingRow(
-  //   valueCell,
-  //   newSettings: Settings,
-  //   settingDef:Settings,
-  //   currentValue,
-  //   includeRemove
-  // ) {
-  //   var input = $('<textarea></textarea>');
+  private _appendCalculatedSettingRow(
+    valueCell: JQuery<HTMLDivElement>,
+    newSettings: Settings,
+    settingDef: CalculatedSettings,
+    currentValue:
+      | string
+      | number
+      | string[]
+      | ((this: HTMLElement, index: number, value: string) => string),
+    includeRemove: boolean
+  ) {
+    var input = $('<textarea></textarea>');
 
-  //   if (settingDef.multi_input) {
-  //     input.on('change', () => {
-  //       var arrayInput: (string | number | string[])[] = [];
-  //       $(valueCell)
-  //         .find('textarea')
-  //         .each(() => {
-  //           var thisVal = $(this).val();
-  //           if (thisVal) {
-  //             arrayInput = arrayInput.concat(thisVal);
-  //           }
-  //         });
-  //       newSettings.settings[settingDef.name] = arrayInput;
-  //     });
-  //   } else {
-  //     input.on('change', () => {
-  //       newSettings.settings[settingDef.name] = $(this).val();
-  //     });
-  //   }
+    if (settingDef.multi_input) {
+      input.on('change', () => {
+        var arrayInput: (string | number | string[])[] = [];
+        $(valueCell)
+          .find('textarea')
+          .each(function () {
+            var thisVal = $(this).val();
+            if (thisVal) {
+              arrayInput = arrayInput.concat(thisVal);
+            }
+          });
+        newSettings.settings[settingDef.name] = arrayInput;
+      });
+    } else {
+      input.on('change', function () {
+        newSettings.settings[settingDef.name] = $(this).val();
+      });
+    }
 
-  //   if (currentValue) {
-  //     input.val(currentValue);
-  //   }
+    if (currentValue) {
+      input.val(currentValue);
+    }
 
-  //   this.valueEditor.createValueEditor(input);
+    this.valueEditor.createValueEditor(input);
 
-  //   var datasourceToolbox = $(
-  //     '<ul class="board-toolbar datasource-input-suffix"></ul>'
-  //   );
-  //   var wrapperDiv = $('<div class="calculated-setting-row"></div>');
-  //   wrapperDiv.append(input).append(datasourceToolbox);
+    var datasourceToolbox = $(
+      '<ul class="board-toolbar datasource-input-suffix"></ul>'
+    );
+    var wrapperDiv = $('<div class="calculated-setting-row"></div>');
+    wrapperDiv.append(input).append(datasourceToolbox);
 
-  //   var datasourceTool = $(
-  //     '<li><i class="icon-plus icon-white"></i><label>DATASOURCE</label></li>'
-  //   ).on('mousedown', (e) => {
-  //     e.preventDefault();
-  //     $(input)
-  //       .val('')
-  //       .trigger('focus')
-  //       .insertAtCaret('datasources["')
-  //       ?.trigger('freeboard-eval');
-  //   });
-  //   datasourceToolbox.append(datasourceTool);
+    var datasourceTool = $(
+      '<li><i class="icon-plus icon-white"></i><label>DATASOURCE</label></li>'
+    ).on('mousedown', function (e) {
+      e.preventDefault();
+      const caretEl = $(input)
+        .val('')
+        .trigger('focus')
+        .insertAtCaret('datasources["');
+      if (caretEl) {
+        caretEl.trigger('freeboard-eval');
+      }
+    });
+    datasourceToolbox.append(datasourceTool);
 
-  //   var jsEditorTool = $(
-  //     '<li><i class="icon-fullscreen icon-white"></i><label>.JS EDITOR</label></li>'
-  //   ).on('mousedown', (e) => {
-  //     e.preventDefault();
-  //     this.jsEditor.displayJSEditor(input.val() as string, (result) => {
-  //       input.val(result);
-  //       input.trigger('change');
-  //     });
-  //   });
-  //   datasourceToolbox.append(jsEditorTool);
+    var jsEditorTool = $(
+      '<li><i class="icon-fullscreen icon-white"></i><label>.JS EDITOR</label></li>'
+    ).on('mousedown', (e) => {
+      e.preventDefault();
+      this.jsEditor.displayJSEditor(input.val() as string, (result) => {
+        input.val(result);
+        input.trigger('change');
+      });
+    });
+    datasourceToolbox.append(jsEditorTool);
 
-  //   if (includeRemove) {
-  //     var removeButton = $(
-  //       '<li class="remove-setting-row"><i class="icon-minus icon-white"></i><label></label></li>'
-  //     ).on('mousedown', (e) => {
-  //       e.preventDefault();
-  //       wrapperDiv.remove();
-  //       $(valueCell).find('textarea:first').trigger('change');
-  //     });
-  //     datasourceToolbox.prepend(removeButton);
-  //   }
+    if (includeRemove) {
+      var removeButton = $(
+        '<li class="remove-setting-row"><i class="icon-minus icon-white"></i><label></label></li>'
+      ).on('mousedown', (e) => {
+        e.preventDefault();
+        wrapperDiv.remove();
+        $(valueCell).find('textarea:first').trigger('change');
+      });
+      datasourceToolbox.prepend(removeButton);
+    }
 
-  //   $(valueCell).append(wrapperDiv);
-  // }
+    $(valueCell).append(wrapperDiv);
+  }
 
   public createPluginEditor(
     title: string,
-    pluginTypes,
-    currentTypeName,
+    pluginTypes: { [x: string]: FreeboardPluginDefinition },
+    currentTypeName: SettingsType,
     currentSettingsValues: Settings,
     settingsSavedCallback: (newSettings: Settings) => void
   ) {
-    var newSettings: Settings = {
+    var newSettings = {
       type: currentTypeName,
-      settings: {},
+      settings: {} as Settings,
     };
 
     function createSettingRow(name: string, displayName: string) {
-      var tr = $(
+      var tr = $<HTMLDivElement>(
         '<div id="setting-row-' + name + '" class="form-row"></div>'
       ).appendTo(form);
 
@@ -124,7 +135,7 @@ export class PluginEditor {
           displayName +
           '</label></div>'
       );
-      return $(
+      return $<HTMLDivElement>(
         '<div id="setting-value-container-' +
           name +
           '" class="form-value"></div>'
@@ -132,18 +143,18 @@ export class PluginEditor {
     }
 
     var selectedType: FreeboardPluginDefinition;
-    var form = $('<div></div>');
+    var form = $<HTMLDivElement>('<div></div>');
 
     var pluginDescriptionElement = $(
       '<div id="plugin-description"></div>'
     ).hide();
     form.append(pluginDescriptionElement);
 
-    function createSettingsFromDefinition(
+    const createSettingsFromDefinition = (
       settingsDefs: Settings[],
-      typeaheadSource?,
-      typeaheadDataSegment?
-    ) {
+      typeaheadSource?: string,
+      typeaheadDataSegment?: string | number | symbol
+    ) => {
       _.each(settingsDefs, (settingDef) => {
         // Set a default value if one doesn't exist
         if (
@@ -193,24 +204,20 @@ export class PluginEditor {
               currentSubSettingValues = currentSettingsValues[settingDef.name];
             }
 
-            function processHeaderVisibility() {
-              if (newSettings.settings[settingDef.name].length > 0) {
+            const processHeaderVisibility = () => {
+              if (
+                (newSettings.settings as Settings)[settingDef.name].length > 0
+              ) {
                 subTableHead.show();
               } else {
                 subTableHead.hide();
               }
-            }
+            };
 
-            function createSubsettingRow(
-              subsettingValue:
-                | {
-                    [key: string]: string;
-                  }
-                | Settings[]
-            ) {
+            const createSubsettingRow = (subsettingValue: Settings) => {
               var subsettingRow = $('<tr></tr>').appendTo(subTableBody);
 
-              var newSetting = {};
+              var newSetting: Partial<Settings> = {};
 
               if (!_.isArray(newSettings.settings[settingDef.name])) {
                 newSettings.settings[settingDef.name] = [];
@@ -228,11 +235,14 @@ export class PluginEditor {
 
                 newSetting[subSettingDef.name] = subsettingValueString;
 
-                $('<input class="table-row-value" type="text">')
+                $<HTMLInputElement>(
+                  '<input class="table-row-value" type="text">'
+                )
                   .appendTo(subsettingCol)
                   .val(subsettingValueString)
-                  .on('change', () => {
-                    newSetting[subSettingDef.name] = $(this).val();
+                  .on('change', function () {
+                    (newSetting as Settings)[subSettingDef.name] =
+                      $(this).val();
                   });
               });
 
@@ -266,32 +276,32 @@ export class PluginEditor {
               subTableDiv.scrollTop(subTableDiv[0].scrollHeight);
 
               processHeaderVisibility();
-            }
+            };
 
             $('<div class="table-operation text-button">ADD</div>')
               .appendTo(valueCell)
               .on('click', () => {
-                var newSubsettingValue = {};
+                var newSubsettingValue: Partial<Settings> = {};
 
                 _.each(settingDef.settings, (subSettingDef) => {
-                  newSubsettingValue[subSettingDef.name] = '';
+                  (newSubsettingValue as Settings)[subSettingDef.name] = '';
                 });
 
-                createSubsettingRow(newSubsettingValue);
+                createSubsettingRow(newSubsettingValue as Settings);
               });
 
             // Create our rows
             _.each(
               currentSubSettingValues,
               (currentSubSettingValue, subSettingIndex) => {
-                createSubsettingRow(currentSubSettingValue);
+                createSubsettingRow(currentSubSettingValue as Settings);
               }
             );
 
             break;
           }
           case 'boolean': {
-            newSettings.settings[settingDef.name] =
+            (newSettings.settings as Settings)[settingDef.name] =
               currentSettingsValues[settingDef.name];
 
             var onOffSwitch = $(
@@ -300,13 +310,13 @@ export class PluginEditor {
                 '-onoff"><div class="onoffswitch-inner"><span class="on">YES</span><span class="off">NO</span></div><div class="onoffswitch-switch"></div></label></div>'
             ).appendTo(valueCell);
 
-            var input = $(
+            const input = $<HTMLInputElement>(
               '<input type="checkbox" name="onoffswitch" class="onoffswitch-checkbox" id="' +
                 settingDef.name +
                 '-onoff">'
             )
               .prependTo(onOffSwitch)
-              .on('change', () => {
+              .on('change', function () {
                 newSettings.settings[settingDef.name] = this.checked;
               });
 
@@ -319,11 +329,11 @@ export class PluginEditor {
           case 'option': {
             var defaultValue = currentSettingsValues[settingDef.name];
 
-            var input = $('<select></select>')
+            const select = $<HTMLSelectElement>('<select></select>')
               .appendTo(
                 $('<div class="styled-select"></div>').appendTo(valueCell)
               )
-              .on('change', () => {
+              .on('change', function () {
                 newSettings.settings[settingDef.name] = $(this).val();
               });
 
@@ -349,13 +359,13 @@ export class PluginEditor {
               $('<option></option>')
                 .text(optionName)
                 .attr('value', optionValue)
-                .appendTo(input);
+                .appendTo(select);
             });
 
             newSettings.settings[settingDef.name] = defaultValue;
 
             if (settingDef.name in currentSettingsValues) {
-              input.val(currentSettingsValues[settingDef.name]);
+              select.val(currentSettingsValues[settingDef.name]);
             }
 
             break;
@@ -370,7 +380,7 @@ export class PluginEditor {
                 if (settingDef.multi_input && _.isArray(currentValue)) {
                   var includeRemove = false;
                   for (var i = 0; i < currentValue.length; i++) {
-                    _appendCalculatedSettingRow(
+                    this._appendCalculatedSettingRow(
                       valueCell,
                       newSettings,
                       settingDef,
@@ -380,7 +390,7 @@ export class PluginEditor {
                     includeRemove = true;
                   }
                 } else {
-                  _appendCalculatedSettingRow(
+                  this._appendCalculatedSettingRow(
                     valueCell,
                     newSettings,
                     settingDef,
@@ -389,7 +399,7 @@ export class PluginEditor {
                   );
                 }
               } else {
-                _appendCalculatedSettingRow(
+                this._appendCalculatedSettingRow(
                   valueCell,
                   newSettings,
                   settingDef,
@@ -401,9 +411,9 @@ export class PluginEditor {
               if (settingDef.multi_input) {
                 var inputAdder = $(
                   '<ul class="board-toolbar"><li class="add-setting-row"><i class="icon-plus icon-white"></i><label>ADD</label></li></ul>'
-                ).mousedown((e) => {
+                ).on('mousedown', (e) => {
                   e.preventDefault();
-                  _appendCalculatedSettingRow(
+                  this._appendCalculatedSettingRow(
                     valueCell,
                     newSettings,
                     settingDef,
@@ -437,9 +447,9 @@ export class PluginEditor {
               }
 
               if (typeaheadSource && settingDef.typeahead_field) {
-                var typeaheadValues = [];
+                var typeaheadValues: any[] = [];
 
-                input.keyup((event) => {
+                input.on('keyup', (event) => {
                   if (event.which >= 65 && event.which <= 91) {
                     input.trigger('change');
                   }
@@ -454,7 +464,7 @@ export class PluginEditor {
                 });
 
                 input.on('change', (event) => {
-                  var value = input.val();
+                  var value = input.val() as string | string[];
                   var source = _.template(typeaheadSource)({ input: value });
                   $.get(source, (data) => {
                     if (typeaheadDataSegment) {
@@ -513,7 +523,7 @@ export class PluginEditor {
           );
         }
       });
-    }
+    };
 
     new DialogBox(form, title, 'Save', 'Cancel', () => {
       $('.validation-error').remove();

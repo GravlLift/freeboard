@@ -1,21 +1,21 @@
 import ko from 'knockout';
 import _ from 'underscore';
-import 'gridster';
+import 'dsmorse-gridster';
 
 export class FreeboardUI {
-  private grid: Gridster;
+  private grid: any;
+
+  private PANE_MARGIN = 10;
+  private PANE_WIDTH = 300;
+  private MIN_COLUMNS = 3;
+  private COLUMN_WIDTH = this.PANE_MARGIN + this.PANE_WIDTH + this.PANE_MARGIN;
+
+  private userColumns = this.MIN_COLUMNS;
+
+  private loadingIndicator = $(
+    '<div class="wrapperloading"><div class="loading up" ></div><div class="loading down"></div></div>'
+  );
   constructor() {
-    var PANE_MARGIN = 10;
-    var PANE_WIDTH = 300;
-    var MIN_COLUMNS = 3;
-    var COLUMN_WIDTH = PANE_MARGIN + PANE_WIDTH + PANE_MARGIN;
-
-    var userColumns = MIN_COLUMNS;
-
-    var loadingIndicator = $(
-      '<div class="wrapperloading"><div class="loading up" ></div><div class="loading down"></div></div>'
-    );
-
     ko.bindingHandlers.grid = {
       init: (
         element,
@@ -27,8 +27,8 @@ export class FreeboardUI {
         // Initialize our grid
         this.grid = $(element)
           .gridster({
-            widget_margins: [PANE_MARGIN, PANE_MARGIN],
-            widget_base_dimensions: [PANE_WIDTH, 10],
+            widget_margins: [this.PANE_MARGIN, this.PANE_MARGIN],
+            widget_base_dimensions: [this.PANE_WIDTH, 10],
             resize: {
               enabled: false,
               axes: ['x'],
@@ -49,26 +49,30 @@ export class FreeboardUI {
   public enableGrid() {
     this.grid.enable();
   }
-  public removePane(element) {
+  public removePane(element: HTMLElement) {
     this.grid.remove_widget(element);
   }
   public removeAllPanes() {
-    this.grid.remove_all_widgets();
+    (this.grid as any).remove_all_widgets();
   }
 
   public processResize(layoutWidgets) {
-    var maxDisplayableColumns = getMaxDisplayableColumnCount();
-    var repositionFunction = () => {};
+    var maxDisplayableColumns = this.getMaxDisplayableColumnCount();
+    let repositionFunction: (index?: number) => void = () => {};
     if (layoutWidgets) {
       repositionFunction = (index) => {
         var paneElement = this;
         var paneModel = ko.dataFor(paneElement);
 
-        var newPosition = getPositionForScreenSize(paneModel);
+        var newPosition = this.getPositionForScreenSize(paneModel);
         $(paneElement)
           .attr(
             'data-sizex',
-            Math.min(paneModel.col_width(), maxDisplayableColumns, grid.cols)
+            Math.min(
+              paneModel.col_width(),
+              maxDisplayableColumns,
+              this.grid.cols
+            )
           )
           .attr('data-row', newPosition.row)
           .attr('data-col', newPosition.col);
@@ -77,49 +81,49 @@ export class FreeboardUI {
       };
     }
 
-    updateGridWidth(Math.min(maxDisplayableColumns, userColumns));
+    this.updateGridWidth(Math.min(maxDisplayableColumns, this.userColumns));
 
-    repositionGrid(repositionFunction);
-    updateGridColumnControls();
+    this.repositionGrid(repositionFunction);
+    this.updateGridColumnControls();
   }
 
   public addGridColumn(shift) {
-    var num_cols = grid.cols + 1;
-    if (updateGridWidth(num_cols)) {
-      repositionGrid(() => {
+    var num_cols = this.grid.cols + 1;
+    if (this.updateGridWidth(num_cols)) {
+      this.repositionGrid(() => {
         var paneElement = this;
         var paneModel = ko.dataFor(paneElement);
 
-        var prevColumnIndex = grid.cols > 1 ? grid.cols - 1 : 1;
+        var prevColumnIndex = this.grid.cols > 1 ? this.grid.cols - 1 : 1;
         var prevCol = paneModel.col[prevColumnIndex];
         var prevRow = paneModel.row[prevColumnIndex];
         var newPosition;
         if (shift) {
           leftPreviewCol = true;
-          var newCol = prevCol < grid.cols ? prevCol + 1 : grid.cols;
+          var newCol = prevCol < this.grid.cols ? prevCol + 1 : this.grid.cols;
           newPosition = { row: prevRow, col: newCol };
         } else {
           rightPreviewCol = true;
           newPosition = { row: prevRow, col: prevCol };
         }
         $(paneElement)
-          .attr('data-sizex', Math.min(paneModel.col_width(), grid.cols))
+          .attr('data-sizex', Math.min(paneModel.col_width(), this.grid.cols))
           .attr('data-row', newPosition.row)
           .attr('data-col', newPosition.col);
       });
     }
-    updateGridColumnControls();
-    userColumns = grid.cols;
+    this.updateGridColumnControls();
+    this.userColumns = this.grid.cols;
   }
 
   public subtractGridColumn(shift) {
-    var num_cols = grid.cols - 1;
-    if (updateGridWidth(num_cols)) {
-      repositionGrid(() => {
+    var num_cols = this.grid.cols - 1;
+    if (this.updateGridWidth(num_cols)) {
+      this.repositionGrid(() => {
         var paneElement = this;
         var paneModel = ko.dataFor(paneElement);
 
-        var prevColumnIndex = grid.cols + 1;
+        var prevColumnIndex = this.grid.cols + 1;
         var prevCol = paneModel.col[prevColumnIndex];
         var prevRow = paneModel.row[prevColumnIndex];
         var newPosition;
@@ -127,31 +131,31 @@ export class FreeboardUI {
           var newCol = prevCol > 1 ? prevCol - 1 : 1;
           newPosition = { row: prevRow, col: newCol };
         } else {
-          var newCol = prevCol <= grid.cols ? prevCol : grid.cols;
+          var newCol = prevCol <= this.grid.cols ? prevCol : this.grid.cols;
           newPosition = { row: prevRow, col: newCol };
         }
         $(paneElement)
-          .attr('data-sizex', Math.min(paneModel.col_width(), grid.cols))
+          .attr('data-sizex', Math.min(paneModel.col_width(), this.grid.cols))
           .attr('data-row', newPosition.row)
           .attr('data-col', newPosition.col);
       });
     }
-    updateGridColumnControls();
-    userColumns = grid.cols;
+    this.updateGridColumnControls();
+    this.userColumns = this.grid.cols;
   }
 
   public updateGridColumnControls() {
     var col_controls = $('.column-tool');
     var available_width = $('#board-content').width();
-    var max_columns = Math.floor(available_width / COLUMN_WIDTH);
+    var max_columns = Math.floor(available_width / this.COLUMN_WIDTH);
 
-    if (grid.cols <= MIN_COLUMNS) {
+    if (this.grid.cols <= this.MIN_COLUMNS) {
       col_controls.addClass('min');
     } else {
       col_controls.removeClass('min');
     }
 
-    if (grid.cols >= max_columns) {
+    if (this.grid.cols >= max_columns) {
       col_controls.addClass('max');
     } else {
       col_controls.removeClass('max');
@@ -160,24 +164,24 @@ export class FreeboardUI {
 
   public getMaxDisplayableColumnCount() {
     var available_width = $('#board-content').width();
-    return Math.floor(available_width / COLUMN_WIDTH);
+    return Math.floor(available_width / this.COLUMN_WIDTH);
   }
 
   public updateGridWidth(newCols) {
-    if (newCols === undefined || newCols < MIN_COLUMNS) {
-      newCols = MIN_COLUMNS;
+    if (newCols === undefined || newCols < this.MIN_COLUMNS) {
+      newCols = this.MIN_COLUMNS;
     }
 
-    var max_columns = getMaxDisplayableColumnCount();
+    var max_columns = this.getMaxDisplayableColumnCount();
     if (newCols > max_columns) {
       newCols = max_columns;
     }
 
     // +newCols to account for scaling on zoomed browsers
-    var new_width = COLUMN_WIDTH * newCols + newCols;
+    var new_width = this.COLUMN_WIDTH * newCols + newCols;
     $('.responsive-column-width').css('max-width', new_width);
 
-    if (newCols === grid.cols) {
+    if (newCols === this.grid.cols) {
       return false;
     } else {
       return true;
@@ -185,18 +189,18 @@ export class FreeboardUI {
   }
 
   public repositionGrid(repositionFunction) {
-    var rootElement = grid.$el;
+    var rootElement = this.grid.$el;
 
     rootElement.find('> li').unbind().removeData();
     $('.responsive-column-width').css('width', '');
-    grid.generate_grid_and_stylesheet();
+    this.grid.generate_grid_and_stylesheet();
 
     rootElement.find('> li').each(repositionFunction);
 
-    grid.init();
+    this.grid.init();
     $('.responsive-column-width').css(
       'width',
-      grid.cols * PANE_WIDTH + grid.cols * PANE_MARGIN * 2
+      this.grid.cols * this.PANE_WIDTH + this.grid.cols * this.PANE_MARGIN * 2
     );
   }
 
@@ -205,35 +209,35 @@ export class FreeboardUI {
   }
 
   public setUserColumns(numCols: number) {
-    this.userColumns = Math.max(MIN_COLUMNS, numCols);
+    this.userColumns = Math.max(this.MIN_COLUMNS, numCols);
   }
 
   public addPane(element, viewModel, isEditing) {
-    var position = getPositionForScreenSize(viewModel);
+    var position = this.getPositionForScreenSize(viewModel);
     var col = position.col;
     var row = position.row;
     var width = Number(viewModel.width());
     var height = Number(viewModel.getCalculatedHeight());
 
-    grid.add_widget(element, width, height, col, row);
+    this.grid.add_widget(element, width, height, col, row);
 
     if (isEditing) {
-      showPaneEditIcons(true);
+      this.showPaneEditIcons(true);
     }
 
-    updatePositionForScreenSize(viewModel, row, col);
+    this.updatePositionForScreenSize(viewModel, row, col);
 
     $(element).attrchange({
       trackValues: true,
       callback: (event) => {
         if (event.attributeName == 'data-row') {
-          updatePositionForScreenSize(
+          this.updatePositionForScreenSize(
             viewModel,
             Number(event.newValue),
             undefined
           );
         } else if (event.attributeName == 'data-col') {
-          updatePositionForScreenSize(
+          this.updatePositionForScreenSize(
             viewModel,
             undefined,
             Number(event.newValue)
@@ -254,19 +258,19 @@ export class FreeboardUI {
       calculatedHeight != elementHeight ||
       viewModel.col_width() != elementWidth
     ) {
-      grid.resize_widget(
+      this.grid.resize_widget(
         $(element),
         viewModel.col_width(),
         calculatedHeight,
         () => {
-          grid.set_dom_grid_height();
+          this.grid.set_dom_grid_height();
         }
       );
     }
   }
 
   public updatePositionForScreenSize(paneModel, row, col) {
-    var displayCols = grid.cols;
+    var displayCols = this.grid.cols;
 
     if (!_.isUndefined(row)) paneModel.row[displayCols] = row;
     if (!_.isUndefined(col)) paneModel.col[displayCols] = col;
@@ -274,13 +278,13 @@ export class FreeboardUI {
 
   public showLoadingIndicator(show) {
     if (show) {
-      loadingIndicator.fadeOut(0).appendTo('body').fadeIn(500);
+      this.loadingIndicator.fadeOut(0).appendTo('body').fadeIn(500);
     } else {
-      loadingIndicator.fadeOut(500).remove();
+      this.loadingIndicator.fadeOut(500).remove();
     }
   }
 
-  public showPaneEditIcons(show, animate) {
+  public showPaneEditIcons(show: boolean, animate?: boolean) {
     if (_.isUndefined(animate)) {
       animate = true;
     }
@@ -296,18 +300,19 @@ export class FreeboardUI {
     }
   }
 
-  public attachWidgetEditIcons(element) {
-    $(element).hover(
+  public attachWidgetEditIcons(element: JQuery<HTMLElement>) {
+    $(element).on(
+      'hover',
       () => {
-        showWidgetEditIcons(this, true);
+        this.showWidgetEditIcons(this, true);
       },
       () => {
-        showWidgetEditIcons(this, false);
+        this.showWidgetEditIcons(this, false);
       }
     );
   }
 
-  public showWidgetEditIcons(element, show) {
+  public showWidgetEditIcons(element: JQuery<HTMLElement>, show: boolean) {
     if (show) {
       $(element).find('.sub-section-tools').fadeIn(250);
     } else {
@@ -316,7 +321,7 @@ export class FreeboardUI {
   }
 
   public getPositionForScreenSize(paneModel) {
-    var cols = grid.cols;
+    var cols = this.grid.cols;
 
     if (_.isNumber(paneModel.row) && _.isNumber(paneModel.col)) {
       // Support for legacy format
